@@ -4,7 +4,7 @@ const cors = require('cors');
 const app = express();
 const http = require('http').Server(app);
 const path = require('path');
-const io = require('socket.io')(http);
+//const io = require('socket.io')(http);
 const mongoose = require('mongoose');
 const generatePassword = require('password-generator');
 
@@ -16,32 +16,34 @@ app.use(cors());
 
 // MONGO DB - Mongoose
 
-// Connection
+// Connection string
 var dbUrl = 'mongodb://usuario:usuario1@ds163402.mlab.com:63402/chatroom'
 
 // Models
 var Room = mongoose.model('Room', { _id : String, name : String, created : String, users : [String]})
 var Message = mongoose.model('Message', {username : String, text : String, created : String, room : String})
 
+// Connection to database
+mongoose.connect(dbUrl, (err) => {
+  console.log('Error on mongodb connect: ', err);
+})
 
 // API v1
 
-// GET rooms
+// API: GET rooms
 app.get('/api/v1/rooms', (req, res) => {
   Room.find({}, (err, rooms) => {
     res.send(rooms)
   })
 })
 
-// GET messages
+// API: GET messages
 app.get('/api/v1/messages', (req, res) => {
-  var roomName = req.query.roomname;
-
-  Message.find({ room: roomName }).sort({ created: 1 }).limit(20).exec((err, messages) => {
-   res.send(messages)
-  })
+var roomName = req.query.roomname;
+Message.find({ room: roomName }).sort({ created: 1 }).limit(20).exec((err, messages) => {
+ res.send(messages)
 })
-
+})
 
 // DEMO
 app.get('/api/passwords', (req, res) => {
@@ -63,11 +65,6 @@ app.get('/api/passwords', (req, res) => {
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname+'/client/build/index.html'));
 });
-
-// Connection to database
-mongoose.connect(dbUrl, {useMongoClient : true}, (err) => {
-  console.log('mongodb connected', err);
-})
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log('Chitchat server Listening on port ${port}'));
