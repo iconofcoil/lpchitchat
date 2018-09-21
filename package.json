@@ -8,14 +8,13 @@
     "heroku-postbuild": "cd client && npm install --only=dev && npm install && npm run build"
   },
   "keywords": [],
-  "author": "Luis Hernandez <luispablo@itopia.com.mx> (www.itopia.com.mx)",
+  "author": "Luis Pablo <luispablo.hg@gmail.com>",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.18.3",
     "cors": "^2.8.4",
     "express": "^4.16.3",
     "mongoose": "^5.2.16",
-    "password-generator": "^2.2.0",
-    "path": "^0.12.7"
+    "password-generator": "^2.2.0"
   }
 }

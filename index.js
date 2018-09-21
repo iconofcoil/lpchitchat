@@ -70,6 +70,5 @@ mongoose.connect(dbUrl, {useMongoClient : true}, (err) => {
   console.log('mongodb connected', err);
 })
 
-
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log('Chitchat server Listening on port ${port}'));
