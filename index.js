@@ -1,13 +1,12 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const app = express();
 const http = require('http').Server(app);
 const path = require('path');
 const io = require('socket.io')(http);
 const mongoose = require('mongoose');
-
 const generatePassword = require('password-generator');
-const app = express();
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'client/build')));
