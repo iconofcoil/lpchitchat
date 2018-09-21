@@ -20,15 +20,15 @@ app.use(cors());
 var dbUrl = 'mongodb://usuario:usuario1@ds163402.mlab.com:63402/chatroom'
 
 // Models
-var Room = mongoose.model('Room', { _id : String, name : String, created : String, users : [String]})
-var Message = mongoose.model('Message', {username : String, text : String, created : String, room : String})
+var Room = mongoose.model('Room', { _id : String, name : String, created : String, users : [String] })
+var Message = mongoose.model('Message', { _id: String, username : String, text : String, created : String, room_id : String })
 
 // Connection to database
 mongoose.connect(dbUrl, (err) => {
   console.log('Error on mongodb connect: ', err);
 })
 
-// API v1
+// RESTful API v1
 
 // API: GET rooms
 app.get('/api/v1/rooms', (req, res) => {
@@ -39,10 +39,11 @@ app.get('/api/v1/rooms', (req, res) => {
 
 // API: GET messages
 app.get('/api/v1/messages', (req, res) => {
-var roomName = req.query.roomname;
-Message.find({ room: roomName }).sort({ created: 1 }).limit(20).exec((err, messages) => {
- res.send(messages)
-})
+  var roomId = req.query.roomid;
+  Message.find({ room_id: roomId }).sort({ created: 1 }).limit(20).exec((err, messages) => {
+   res.send(messages)
+  })
+  //res.send(req.query.roomid)
 })
 
 // DEMO
