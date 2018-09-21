@@ -41,6 +41,15 @@ class App extends React.Component {
         .catch(err => console.log('error on connecting: ', err))
     }
     
+    createRoom(name) {
+        Axios.post('/api/v1/rooms', { roomname: name })
+             .then(res => {
+                 var room = res.data;
+                 this.joinRoom(room._id)
+             })
+             .catch(err => console.log('Error api create room: ', err))
+    }
+    
     getRooms() {
        Axios.get('/api/v1/rooms')
             .then(res => {
@@ -63,43 +72,20 @@ class App extends React.Component {
                     roomId: roomId,
                     messages: res.data
                 })
+                this.getRooms()
             })
             .catch(err => console.log('Error api get messages: ', err))
-
-/*  CHATKIT
-        this.currentUser.subscribeToRoom({
-            roomId: roomId,
-            hooks: {
-                onNewMessage: message => {
-                    this.setState({
-                        messages: [...this.state.messages, message]
-                    })
-                }
-            }
-        })
-        .then(room => {
-            this.setState({
-                roomId: room.id
-            })
-            this.getRooms()
-        })
-        .catch(err => console.log('error on subscribing to room: ', err))
-*/
     }
     
     sendMessage(text) {
-        this.currentUser.sendMessage({
-            text,
-            roomId: this.state.roomId
-        })
-    }
-    
-    createRoom(name) {
-        this.currentUser.createRoom({
-            name
-        })
-        .then(room => this.subscribeToRoom(room.id))
-        .catch(err => console.log('error with createRoom: ', err))
+        console.log('Mensaje: ', text)
+        console.log('Msj Cuarto: ', this.state.roomId)
+        Axios.post('/api/v1/messages', { username: 'frontend', text: text, roomid: this.state.roomId })
+             .then(res => {
+                 var message = res.data;
+                 this.setState({ messages: [...this.state.messages, message] })
+             })
+             .catch(err => console.log('Error api create message: ', err))
     }
     
     render() {
