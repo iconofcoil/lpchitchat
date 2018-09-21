@@ -2,10 +2,10 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const app = express();
-const http = require('http').Server(app);
+const server = require('http').Server(app);
 const path = require('path');
 const mongoose = require('mongoose');
-const io = require('socket.io')(http);
+const io = require('socket.io')(server);
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'client/build')));
@@ -93,13 +93,12 @@ app.get('*', (req, res) => {
 
 // Socket Connection
 // UI Stuff
-//io.on('connection', socket => {
-  // Fire 'send' event for updating message list
-//  socket.on('user message', data => {
-//      io.emit('send', data);
-//  });
-//});
+io.on('connection', socket => {
+  socket.on('SEND_MESSAGE', data => {
+      io.emit('RECEIVE_MESSAGE', data);
+  });
+});
 
 // Fire server
 const port = process.env.PORT || 5000;
-app.listen(port, () => console.log('Chitchat server listening on port 5000'));
+server.listen(port, () => console.log('Chitchat server listening on port 5000'));

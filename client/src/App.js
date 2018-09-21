@@ -1,7 +1,7 @@
 import React from 'react'
 import Axios from 'axios'
 import firebase, { auth, provider } from './firebase.js';
-import { Button } from 'react-bootstrap';
+import io from 'socket.io-client'
 
 import MessageList from './components/MessageList'
 import SendMessageForm from './components/SendMessageForm'
@@ -15,11 +15,12 @@ class App extends React.Component {
         this.state = {
             roomId: null,
             user: null,
-            username: '',
+            username: null,
             messages: [],
             joinableRooms: [],
             joinedRooms: []
         }
+        this.socket = io();
         this.login = this.login.bind(this)
         this.logout = this.logout.bind(this)
         this.sendMessage = this.sendMessage.bind(this)
@@ -31,10 +32,24 @@ class App extends React.Component {
     componentDidMount() {
         auth.onAuthStateChanged((user) => {
             if (user) {
-              this.setState({ user })
+              this.setState({
+                  user,
+                  username: user.email
+             })
               this.getRooms()
             } 
           });
+
+          this.socket.on('RECEIVE_MESSAGE', message => {
+              console.log('Mensaje recibido: ', message)
+                this.setState({
+                    messages: [...this.state.messages, message]
+                })
+            });
+    }
+
+    componentWillUnmount() {
+        this.socket.close()
     }
 
     login() {
@@ -94,15 +109,18 @@ class App extends React.Component {
     
     sendMessage(text) {
         const userName = this.state.username
-        console.log('User name: ', this.state.username)
+        console.log('Usuario actual:', userName)
+
         Axios.post('/api/v1/messages', { username: userName, text: text, roomid: this.state.roomId })
              .then(res => {
                  var message = res.data;
-                 this.setState({ messages: [...this.state.messages, message] })
+        
+                 this.socket.emit('SEND_MESSAGE', message)
+                 console.log('Mensaje enviado', message)
              })
              .catch(err => console.log('Error api create message: ', err))
     }
-    
+
     render() {
         return (
             <div className="app">
@@ -122,7 +140,7 @@ class App extends React.Component {
                             <NewRoomForm createRoom={this.createRoom} />
                             <div className="logout-form">
                                 <form>
-                                    <button onClick={this.logout}>Log Out</button>
+                                    <button className="logout-button" onClick={this.logout}>Log Out</button>
                                 </form>
                             </div>
                         </div>
