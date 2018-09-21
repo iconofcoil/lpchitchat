@@ -20,6 +20,11 @@ html, body {
 }
 
 .app {
+    height: 100%;
+    width: 100%;
+}
+
+.chat {
     display: grid;
     height: 100%;
     grid-template-columns: repeat(6, 1fr);
@@ -30,7 +35,30 @@ html, body {
         "r m m m m m"
         "r m m m m m"
         "r m m m m m"
-        "n f f f f f";
+        "n f f f f l";
+}
+
+.login-form {
+    margin: auto;
+    height: 50%;
+    width: 50%;
+    padding: 200px;
+}
+
+.login-button {
+    background-color: #008CBA;
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;}
+
+.logout-form {
+    grid-area: l;
 }
 
 .new-room-form {

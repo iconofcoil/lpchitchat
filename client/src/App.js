@@ -1,12 +1,12 @@
 import React from 'react'
-import Chatkit from '@pusher/chatkit'
 import Axios from 'axios'
+import firebase, { auth, provider } from './firebase.js';
+import { Button } from 'react-bootstrap';
+
 import MessageList from './components/MessageList'
 import SendMessageForm from './components/SendMessageForm'
 import RoomList from './components/RoomList'
 import NewRoomForm from './components/NewRoomForm'
-
-import { tokenUrl, instanceLocator } from './config'
 
 class App extends React.Component {
     
@@ -14,10 +14,14 @@ class App extends React.Component {
         super()
         this.state = {
             roomId: null,
+            user: null,
+            username: '',
             messages: [],
             joinableRooms: [],
             joinedRooms: []
         }
+        this.login = this.login.bind(this)
+        this.logout = this.logout.bind(this)
         this.sendMessage = this.sendMessage.bind(this)
         this.joinRoom = this.joinRoom.bind(this)
         this.getRooms = this.getRooms.bind(this)
@@ -25,22 +29,35 @@ class App extends React.Component {
     } 
     
     componentDidMount() {
-        const chatManager = new Chatkit.ChatManager({
-            instanceLocator,
-            userId: 'perborgen',
-            tokenProvider: new Chatkit.TokenProvider({
-                url: tokenUrl
-            })
-        })
-        
-        chatManager.connect()
-        .then(currentUser => {
-            this.currentUser = currentUser
-            this.getRooms()
-        })
-        .catch(err => console.log('error on connecting: ', err))
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+              this.setState({ user })
+              this.getRooms()
+            } 
+          });
     }
-    
+
+    login() {
+        auth.signInWithPopup(provider) 
+          .then((result) => {
+            const user = result.user;
+            this.setState({
+              user,
+              username: user.email
+            });
+            console.log('Nombre usuario: ', this.state.username)
+        });
+    }    
+
+    logout() {
+        auth.signOut()
+          .then(() => {
+            this.setState({
+              user: null
+            });
+          });
+    }
+
     createRoom(name) {
         Axios.post('/api/v1/rooms', { roomname: name })
              .then(res => {
@@ -53,7 +70,6 @@ class App extends React.Component {
     getRooms() {
        Axios.get('/api/v1/rooms')
             .then(res => {
-                console.log('Rooms: ', res.data);
                 this.setState({ joinableRooms: res.data })
             })
             .catch(err => console.log('Error api get rooms: ', err))
@@ -62,7 +78,6 @@ class App extends React.Component {
     joinRoom(roomId) {
         // Clear previous messages
         this.setState({ messages: [] })
-        console.log('Room Id selected: ', roomId)
 
         // Get most recent messages in room
         Axios.get('/api/v1/messages', { params: { roomid: roomId } })
@@ -78,9 +93,9 @@ class App extends React.Component {
     }
     
     sendMessage(text) {
-        console.log('Mensaje: ', text)
-        console.log('Msj Cuarto: ', this.state.roomId)
-        Axios.post('/api/v1/messages', { username: 'frontend', text: text, roomid: this.state.roomId })
+        const userName = this.state.username
+        console.log('User name: ', this.state.username)
+        Axios.post('/api/v1/messages', { username: userName, text: text, roomid: this.state.roomId })
              .then(res => {
                  var message = res.data;
                  this.setState({ messages: [...this.state.messages, message] })
@@ -91,17 +106,33 @@ class App extends React.Component {
     render() {
         return (
             <div className="app">
-                <RoomList
-                    joinRoom={this.joinRoom}
-                    rooms={[...this.state.joinableRooms, ...this.state.joinedRooms]}
-                    roomId={this.state.roomId} />
-                <MessageList 
-                    roomId={this.state.roomId}
-                    messages={this.state.messages} />
-                <SendMessageForm
-                    disabled={!this.state.roomId}
-                    sendMessage={this.sendMessage} />
-                <NewRoomForm createRoom={this.createRoom} />
+
+                    {this.state.user ?
+                        <div className="chat">
+                            <RoomList
+                                joinRoom={this.joinRoom}
+                                rooms={[...this.state.joinableRooms, ...this.state.joinedRooms]}
+                                roomId={this.state.roomId} />
+                            <MessageList 
+                                roomId={this.state.roomId}
+                                messages={this.state.messages} />
+                            <SendMessageForm
+                                disabled={!this.state.roomId}
+                                sendMessage={this.sendMessage} />
+                            <NewRoomForm createRoom={this.createRoom} />
+                            <div className="logout-form">
+                                <form>
+                                    <button onClick={this.logout}>Log Out</button>
+                                </form>
+                            </div>
+                        </div>
+                        :
+                        <div className="login-form">
+                            <h2>LP ChitChat Login</h2>
+                            <button className="login-button" onClick={this.login}>Log In</button>
+                        </div>
+                    }
+
             </div>
         );
     }
