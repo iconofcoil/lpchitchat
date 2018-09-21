@@ -11,7 +11,11 @@
   "author": "Luis Hernandez <luispablo@itopia.com.mx> (www.itopia.com.mx)",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^1.18.3",
+    "cors": "^2.8.4",
     "express": "^4.16.3",
-    "password-generator": "^2.2.0"
+    "mongoose": "^5.2.16",
+    "password-generator": "^2.2.0",
+    "path": "^0.12.7"
   }
 }
