@@ -17,14 +17,14 @@ class App extends React.Component {
             user: null,
             username: null,
             messages: [],
-            joinableRooms: [],
-            joinedRooms: []
+            availableRooms: []
         }
         this.socket = io();
         this.login = this.login.bind(this)
         this.logout = this.logout.bind(this)
         this.sendMessage = this.sendMessage.bind(this)
         this.joinRoom = this.joinRoom.bind(this)
+        this.leaveRoom = this.leaveRoom.bind(this)
         this.getRooms = this.getRooms.bind(this)
         this.createRoom = this.createRoom.bind(this)
     } 
@@ -35,17 +35,18 @@ class App extends React.Component {
               this.setState({
                   user,
                   username: user.email
-             })
+              })
+
               this.getRooms()
             } 
           });
 
-          this.socket.on('RECEIVE_MESSAGE', message => {
-              console.log('Mensaje recibido: ', message)
-                this.setState({
-                    messages: [...this.state.messages, message]
-                })
-            });
+        // Message received, post it
+        this.socket.on('RECEIVE_MESSAGE', message => {
+            this.setState({
+                messages: [...this.state.messages, message]
+            })
+        });
     }
 
     componentWillUnmount() {
@@ -60,11 +61,15 @@ class App extends React.Component {
               user,
               username: user.email
             });
-            console.log('Nombre usuario: ', this.state.username)
         });
     }    
 
     logout() {
+        // Leave current room
+        if (this.state.roomId) {
+            this.leaveRoom(this.state.roomId, this.state.username)
+        }
+
         auth.signOut()
           .then(() => {
             this.setState({
@@ -83,40 +88,79 @@ class App extends React.Component {
     }
     
     getRooms() {
+        this.setState({ availableRooms: [] })
+
        Axios.get('/api/v1/rooms')
             .then(res => {
-                this.setState({ joinableRooms: res.data })
+                this.setState({ availableRooms: res.data })
             })
             .catch(err => console.log('Error api get rooms: ', err))
     }
     
     joinRoom(roomId) {
+        // Leave current room
+        if (this.state.roomId) {
+            this.leaveRoom(this.state.roomId, this.state.username)
+        }
+
         // Clear previous messages
         this.setState({ messages: [] })
+
+        // Join room
+        const params = '/join/' + roomId + '/' + this.state.username
+        console.log('Params: ' + params)
+        Axios.patch('/api/v1/rooms/user' + params )
+            .then(res => {
+                console.log('Join room: ', res.data)
+            })
+            .catch(err => console.log('Error api join room: ', err))
 
         // Get most recent messages in room
         Axios.get('/api/v1/messages', { params: { roomid: roomId } })
             .then(res => {
-                console.log('Messages: ', res.data);
                 this.setState({
                     roomId: roomId,
                     messages: res.data
                 })
+                // Update rooms
                 this.getRooms()
             })
             .catch(err => console.log('Error api get messages: ', err))
     }
+
+    leaveRoom(roomId, userName) {
+        const params = '/leave/' + roomId + '/' + userName
+        
+        Axios.patch('/api/v1/rooms/user' + params)
+            .then(res => {
+                var room = res.data
+
+                // No users? Archive room
+                if (room.users.length == 0) {
+                    Axios.post('/api/v1/archiverooms', { roomid: roomId })
+                    .then(res => {
+                        const params = roomId;
+                        Axios.delete('/api/v1/rooms/' + params)
+                             .then(res => {
+                                //this.getRooms()
+                             })
+                             .catch(err => console.log('Error api delete room: ', err))
+                    })
+                    .catch(err => console.log('Error api create archive room: ', err))
+                }
+            })
+            .catch(err => console.log('Error api leave room: ', err))
+    }
     
     sendMessage(text) {
-        const userName = this.state.username
-        console.log('Usuario actual:', userName)
-
-        Axios.post('/api/v1/messages', { username: userName, text: text, roomid: this.state.roomId })
+        Axios.post('/api/v1/messages', {
+                username: this.state.username,
+                text: text,
+                roomid: this.state.roomId
+             })
              .then(res => {
                  var message = res.data;
-        
                  this.socket.emit('SEND_MESSAGE', message)
-                 console.log('Mensaje enviado', message)
              })
              .catch(err => console.log('Error api create message: ', err))
     }
@@ -129,7 +173,7 @@ class App extends React.Component {
                         <div className="chat">
                             <RoomList
                                 joinRoom={this.joinRoom}
-                                rooms={[...this.state.joinableRooms, ...this.state.joinedRooms]}
+                                rooms={[...this.state.availableRooms]}
                                 roomId={this.state.roomId} />
                             <MessageList 
                                 roomId={this.state.roomId}
